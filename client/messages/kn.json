@@ -1,0 +1,33 @@
+{
+  "navigation": {
+    "home": "ಮುಖಪುಟ",
+    "dashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
+    "services": "ಸೇವೆಗಳು",
+    "downloads": "ಡೌನ್‌ಲೋಡ್‌ಗಳು",
+    "support": "ಬೆಂಬಲ",
+    "profile": "ಪ್ರೊಫೈಲ್"
+  },
+  "home": {
+    "hero_title": "ಸರ್ಕಾರಿ ಸೇವೆಗಳು, ಈಗ ಸುಲಭ",
+    "hero_subtitle": "ದಾಖಲೆಗಳು, ಅರ್ಜಿಗಳು ಮತ್ತು ಅಧಿಕೃತ ಪ್ರಕ್ರಿಯೆಗಳಿಗಾಗಿ ನಿಮ್ಮ ವೈಯಕ್ತಿಕ ಮಾರ್ಗದರ್ಶಿ.",
+    "get_started": "ಪ್ರಾರಂಭಿಸಿ",
+    "popular_services": "ಜನಪ್ರಿಯ ಸೇವೆಗಳು"
+  },
+  "services": {
+    "income_certificate": "ಆದಾಯ ಪ್ರಮಾಣ ಪತ್ರ",
+    "caste_certificate": "ಜಾತಿ ಪ್ರಮಾಣ ಪತ್ರ",
+    "birth_certificate": "ಜನನ ಪ್ರಮಾಣ ಪತ್ರ",
+    "death_certificate": "ಮರಣ ಪ್ರಮಾಣ ಪತ್ರ",
+    "driving_license": "ಚಾಲನಾ ಪರವಾನಗಿ",
+    "passport": "ಪಾಸ್‌ಪೋರ್ಟ್",
+    "voter_id": "ಮತದಾರರ ಗುರುತಿನ ಚೀಟಿ",
+    "pan_card": "ಪ್ಯಾನ್ ಕಾರ್ಡ್",
+    "aadhaar_update": "ಆಧಾರ್ ಅಪ್‌ಡೇಟ್",
+    "ration_card": "ಪಡಿತರ ಚೀಟಿ"
+  },
+  "action": {
+    "apply_online": "ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ",
+    "create_plan": "ನನ್ನ ಕ್ರಿಯಾ ಯೋಜನೆಯನ್ನು ರಚಿಸಿ",
+    "track": "ಅರ್ಜಿಯನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ"
+  }
+}

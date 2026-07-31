@@ -1,0 +1,33 @@
+{
+  "navigation": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "services": "Services",
+    "downloads": "Downloads",
+    "support": "Support",
+    "profile": "Profile"
+  },
+  "home": {
+    "hero_title": "Government services, made simple",
+    "hero_subtitle": "Your personalized guide to documents, applications, and official procedures.",
+    "get_started": "Get started",
+    "popular_services": "Popular services"
+  },
+  "services": {
+    "income_certificate": "Income Certificate",
+    "caste_certificate": "Caste Certificate",
+    "birth_certificate": "Birth Certificate",
+    "death_certificate": "Death Certificate",
+    "driving_license": "Driving License",
+    "passport": "Passport",
+    "voter_id": "Voter ID",
+    "pan_card": "PAN Card",
+    "aadhaar_update": "Aadhaar Update",
+    "ration_card": "Ration Card"
+  },
+  "action": {
+    "apply_online": "Apply Online",
+    "create_plan": "Create My Action Plan",
+    "track": "Track Application"
+  }
+}

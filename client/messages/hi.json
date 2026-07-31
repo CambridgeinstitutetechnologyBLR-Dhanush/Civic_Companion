@@ -1,0 +1,33 @@
+{
+  "navigation": {
+    "home": "होम",
+    "dashboard": "डैशबोर्ड",
+    "services": "सेवाएं",
+    "downloads": "डाउनलोड",
+    "support": "सहायता",
+    "profile": "प्रोफ़ाइल"
+  },
+  "home": {
+    "hero_title": "सरकारी सेवाएं, अब आसान",
+    "hero_subtitle": "दस्तावेज़ों, आवेदनों और आधिकारिक प्रक्रियाओं के लिए आपका व्यक्तिगत मार्गदर्शक।",
+    "get_started": "शुरू करें",
+    "popular_services": "लोकप्रिय सेवाएं"
+  },
+  "services": {
+    "income_certificate": "आय प्रमाण पत्र",
+    "caste_certificate": "जाति प्रमाण पत्र",
+    "birth_certificate": "जन्म प्रमाण पत्र",
+    "death_certificate": "मृत्यु प्रमाण पत्र",
+    "driving_license": "ड्राइविंग लाइसेंस",
+    "passport": "पासपोर्ट",
+    "voter_id": "वोटर आईडी",
+    "pan_card": "पैन कार्ड",
+    "aadhaar_update": "आधार अपडेट",
+    "ration_card": "राशन कार्ड"
+  },
+  "action": {
+    "apply_online": "ऑनलाइन आवेदन करें",
+    "create_plan": "मेरी कार्य योजना बनाएं",
+    "track": "आवेदन ट्रैक करें"
+  }
+}
