@@ -568,13 +568,14 @@ def generate_plan(request: PlanRequest) -> GuidancePlan:  # noqa: C901
 
     # Record verified source
     supabase.table("source_records").insert(
-        {
-            "service": service_name,
-            "source_name": "Nadakacheri / District portals",
-            "source_url": official_url,
-            "last_reviewed": created_at,
-        }
-    ).execute()
+    {
+        "id": str(uuid4()),
+        "service": service_name,
+        "source_name": "Nadakacheri / District portals",
+        "source_url": official_url,
+        "last_reviewed": created_at,
+    }
+).execute()
 
     return GuidancePlan(
         application_id=application_id,
