@@ -29,9 +29,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://civic-companion-nu.vercel.app",
-        "https://civic-companion-d2y4ypn6a-dhanush6.vercel.app",
     ],
+    allow_origin_regex=r"https://civic-companion-.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
