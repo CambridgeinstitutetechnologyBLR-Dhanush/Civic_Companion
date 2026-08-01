@@ -27,7 +27,10 @@ load_dotenv()
 app = FastAPI(title="Civic Companion API", version="0.3.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://civic-companion-nu.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -724,4 +727,13 @@ def emergency_guidance(request: EmergencyRequest) -> dict[str, str]:
         "service": request.service,
         "guidance": advice[request.issue],
         "source_notice": "Confirm the exact procedure with the official issuing authority.",
+    }
+
+@app.get("/")
+def root():
+    return {
+        "message": "Civic Companion API",
+        "status": "running",
+        "docs": "/docs",
+        "health": "/health"
     }
