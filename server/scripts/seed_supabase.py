@@ -5,7 +5,10 @@ Usage:
 """
 import os
 from datetime import datetime
+from dotenv import load_dotenv
 from supabase import create_client as create_supabase_client
+
+load_dotenv()
 
 
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
