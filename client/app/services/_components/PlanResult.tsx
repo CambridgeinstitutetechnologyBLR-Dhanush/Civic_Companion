@@ -399,11 +399,11 @@ export function PlanResult({ plan }: { plan: GuidancePlan }) {
           {/* Official Website */}
           <Card className="p-5">
             <SectionHeader icon={<Globe size={16} />} title="Official Portal" accent />
-            <OfficialWebsiteCard 
-              serviceName={plan.service} 
-              state={plan.state} 
-              user={user} 
-              onRequireAuth={() => setShowLoginModal(true)} 
+            <OfficialWebsiteCard
+              serviceName={plan.service}
+              state={plan.state}
+              user={user}
+              onRequireAuth={() => setShowLoginModal(true)}
             />
           </Card>
 
@@ -417,9 +417,9 @@ export function PlanResult({ plan }: { plan: GuidancePlan }) {
           </div>
         </div>
       </div>
-      <LoginModal 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)} 
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
         title="Login to Apply Online"
       />
     </div>

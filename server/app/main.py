@@ -11,6 +11,8 @@ Design contract
 """
 
 import json
+import logging
+import math
 import os
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -106,7 +108,20 @@ class PlanRequest(BaseModel):
     purpose: str = Field(min_length=2, max_length=120)
     has_aadhaar: bool
     category: str = "General"
+    district: str | None = None
+    taluk: str | None = None
+    native_place: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
+
+def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    R = 6371.0 # Earth radius in kilometers
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return round(R * c, 1)
 
 class PlanStep(BaseModel):
     title: str
@@ -163,6 +178,20 @@ class ProgressUpdate(BaseModel):
     status: str = Field(
         pattern="^(started|documents_ready|applied|verification|completed)$"
     )
+
+
+class ApplicationSaveUpdate(BaseModel):
+    """Payload for saving a generated plan to a user account.
+
+    Both fields are optional so callers can supply only what they need:
+    - status: one of the allowed transition values or 'saved'
+    - user_id: the Supabase auth.uid() of the requesting user
+    """
+    status: str | None = Field(
+        default=None,
+        pattern="^(started|documents_ready|applied|verification|completed|saved|planned)$",
+    )
+    user_id: str | None = None
 
 
 class EmergencyRequest(BaseModel):
@@ -421,24 +450,120 @@ def generate_plan(request: PlanRequest) -> GuidancePlan:  # noqa: C901
         supabase.table("service_offices")
         .select("*")
         .eq("state", state_name)
-        .limit(5)
         .execute()
     )
+
+    selected_office = None
+    
+    if request.latitude is not None and request.longitude is not None:
+        offices_with_dist = []
+        for office in offices_rows:
+            lat = office.get("latitude")
+            lng = office.get("longitude")
+            try:
+                lat = float(lat)
+                lng = float(lng)
+                dist = haversine(request.latitude, request.longitude, lat, lng)
+                office["calculated_distance"] = dist
+                offices_with_dist.append(office)
+            except (TypeError, ValueError):
+                pass
+        
+        if offices_with_dist:
+            offices_with_dist.sort(key=lambda x: x["calculated_distance"])
+            selected_office = offices_with_dist[0]
+
+    if not selected_office and request.taluk:
+        for office in offices_rows:
+            if office.get("taluk") == request.taluk and office.get("district") == request.district:
+                selected_office = office
+                break
+
+    if not selected_office and request.district:
+        for office in offices_rows:
+            if office.get("district") == request.district:
+                selected_office = office
+                break
+
+    if not selected_office and offices_rows:
+        selected_office = offices_rows[0]
 
     # ------------------------------------------------------------------
     # 3. Extract verified field values (with safe fallbacks)
     # ------------------------------------------------------------------
-    eligibility: str = (
-        rules.get("eligibility")
-        or "Eligibility criteria not yet verified — check the official portal."
-    )
+    SERVICE_MAPPINGS = {
+        "Income Certificate": {
+            "eligibility": "• Applicant must be a resident of the selected State.\n• Applicant must require the certificate for education, scholarship, employment, government schemes, or other valid purposes.\n• Applicant should possess valid identity and address proof.\n• Family income details must be available.\n• Applicant should provide accurate personal information.",
+            "documents": ["Aadhaar Card", "Address Proof", "Income Proof", "Passport Size Photograph", "Self Declaration", "Ration Card (if applicable)"]
+        },
+        "Caste Certificate": {
+            "eligibility": "• Applicant belongs to the claimed caste/community.\n• Applicant is a permanent resident of the selected State.\n• Community details should be supported by valid records.\n• Identity and address proof are required.",
+            "documents": ["Aadhaar Card", "Community Certificate", "School Records", "Address Proof"]
+        },
+        "Residence Certificate": {
+            "eligibility": "• Applicant must currently reside in the selected State.\n• Applicant must provide proof of residence.\n• Identity proof is mandatory.",
+            "documents": []
+        },
+        "Birth Certificate": {
+            "eligibility": "• Birth must be eligible for registration.\n• Parent, guardian, or authorized applicant may apply.\n• Required birth information must be available.",
+            "documents": ["Hospital Birth Record", "Parent ID Proof", "Parent Address Proof"]
+        },
+        "Death Certificate": {
+            "eligibility": "• Death must have occurred within the applicable jurisdiction.\n• Applicant must be a legal family member or authorized representative.\n• Required supporting records must be available.",
+            "documents": []
+        },
+        "Marriage Certificate": {
+            "eligibility": "• Both parties satisfy the legal age requirements.\n• Marriage has been legally solemnized.\n• Identity and address proof of both parties are available.\n• Marriage witnesses are available if required.",
+            "documents": []
+        },
+        "Domicile Certificate": {
+            "eligibility": "• Applicant satisfies the State domicile requirements.\n• Required period of residence has been completed.\n• Identity and address proof are available.",
+            "documents": []
+        },
+        "EWS Certificate": {
+            "eligibility": "• Applicant belongs to the Economically Weaker Section.\n• Family income satisfies the prescribed government limit.\n• Applicant does not belong to reserved categories where applicable.",
+            "documents": []
+        },
+        "Disability Certificate": {
+            "eligibility": "• Applicant has a qualifying disability.\n• Medical examination by an authorized medical board is required.",
+            "documents": []
+        },
+        "Senior Citizen Certificate": {
+            "eligibility": "• Applicant has attained the prescribed age limit.\n• Identity and age proof are available.",
+            "documents": []
+        },
+        "Driving Licence": {
+            "eligibility": "• Applicant meets the minimum legal age.\n• Learner Licence requirements are satisfied.\n• Medical fitness requirements are fulfilled where applicable.",
+            "documents": []
+        },
+        "Passport": {
+            "eligibility": "• Applicant is an Indian citizen.\n• Identity, address, and date of birth proof are available.\n• Police verification may be required.",
+            "documents": []
+        },
+        "Voter ID": {
+            "eligibility": "• Applicant is an Indian citizen.\n• Applicant has attained 18 years of age.\n• Applicant is ordinarily resident in the constituency.",
+            "documents": []
+        },
+        "Ration Card": {
+            "eligibility": "• Applicant belongs to an eligible household.\n• Family member details are available.\n• Identity and residence proof are available.",
+            "documents": []
+        }
+    }
+
+    mapped_service = SERVICE_MAPPINGS.get(service_name)
+
+    if mapped_service:
+        eligibility = mapped_service["eligibility"]
+    else:
+        eligibility = rules.get("eligibility") or "Eligibility information is currently unavailable."
+
     fee_note: str = (
         rules.get("fee")
-        or "Fee not verified — confirm on the official portal before paying."
+        or "Please refer to the official government portal."
     )
     timeline: str = (
         rules.get("processing_time")
-        or "Processing time not verified — check the official portal."
+        or "Please refer to the official government portal."
     )
     department: str = rules.get("department") or "Department not verified"
     official_url: str = (
@@ -447,38 +572,86 @@ def generate_plan(request: PlanRequest) -> GuidancePlan:  # noqa: C901
 
     # Build verified document list
     doc_models: list[Document] = []
-    for d in docs_rows:
-        doc_name = d.get("document_name", "")
-        is_mandatory = d.get("mandatory", True)
-        if doc_name:
+    if mapped_service:
+        for doc_name in mapped_service["documents"]:
             is_available = doc_name.lower() == "aadhaar card" and request.has_aadhaar
             doc_models.append(
                 Document(
                     name=doc_name,
-                    mandatory=is_mandatory,
+                    mandatory=True,
                     status="available" if is_available else "needed",
                 )
             )
+    else:
+        for d in docs_rows:
+            doc_name = d.get("document_name", "")
+            is_mandatory = d.get("mandatory", True)
+            if doc_name:
+                is_available = doc_name.lower() == "aadhaar card" and request.has_aadhaar
+                doc_models.append(
+                    Document(
+                        name=doc_name,
+                        mandatory=is_mandatory,
+                        status="available" if is_available else "needed",
+                    )
+                )
 
     # Build verified office
-    first_office = offices_rows[0] if offices_rows else {}
-    office_model = Office(
-        name=first_office.get("office_name") or "Nearest AJSK / Nadakacheri centre",
-        address=first_office.get("address") or "Check the official portal for your nearest office.",
-        hours="Check official portal for working hours.",
-        phone="",
-    )
+    first_office = selected_office
+    
+    if not first_office:
+        office_model = Office(
+            name="No verified office information is currently available for your location.",
+            address="Please check the official government portal.",
+            hours="N/A",
+            phone="N/A"
+        )
+    else:
+        office_name = first_office.get("office_name") or "Nearest Government Office"
+        office_dept = first_office.get("department") or "Department not verified"
+        final_name = f"{office_name} ({office_dept})"
 
-    # ------------------------------------------------------------------
+        address_parts = [first_office.get("address") or "Address not verified"]
+        if first_office.get("taluk"): address_parts.append(f"Taluk: {first_office.get('taluk')}")
+        if first_office.get("district"): address_parts.append(f"District: {first_office.get('district')}")
+        if first_office.get("state"): address_parts.append(first_office.get("state"))
+        
+        dist = first_office.get("calculated_distance") or first_office.get("distance")
+        if dist is not None: address_parts.append(f"Distance: {dist} km away")
+        
+        # Build maps link dynamically if we have coords or fallback to stored link
+        map_link = first_office.get("google_maps_direction_link")
+        lat = first_office.get("latitude")
+        lng = first_office.get("longitude")
+        if lat and lng:
+            map_link = f"https://www.google.com/maps/dir/?api=1&destination={lat},{lng}"
+            
+        if map_link: address_parts.append(f"Map: {map_link}")
+        
+        final_address = ", ".join(address_parts)
+
+        phone_parts = [first_office.get("phone") or "Phone not available"]
+        if first_office.get("email"): phone_parts.append(f"Email: {first_office.get('email')}")
+        if first_office.get("website"): phone_parts.append(f"Web: {first_office.get('website')}")
+        final_phone = " | ".join(phone_parts)
+
+        final_hours = first_office.get("working_hours") or first_office.get("hours") or "9:00 AM - 5:00 PM"
+
+        office_model = Office(
+            name=final_name,
+            address=final_address,
+            hours=final_hours,
+            phone=final_phone
+        )# ------------------------------------------------------------------
     # 4. Build the grounded context dict passed to OpenAI
     # ------------------------------------------------------------------
     verified_context = {
         "service": service_name,
         "state": state_name,
         "department": department if department != "Department not verified" else None,
-        "eligibility": eligibility if "not yet verified" not in eligibility else None,
-        "fee": fee_note if "not verified" not in fee_note else None,
-        "processing_time": timeline if "not verified" not in timeline else None,
+        "eligibility": eligibility if "Please refer" not in eligibility else None,
+        "fee": fee_note if "Please refer" not in fee_note else None,
+        "processing_time": timeline if "Please refer" not in timeline else None,
         "official_url": official_url,
         "required_documents": [d.name for d in doc_models],
         "office_name": office_model.name if offices_rows else None,
@@ -537,7 +710,7 @@ def generate_plan(request: PlanRequest) -> GuidancePlan:  # noqa: C901
         "All factual information in this plan (eligibility, fees, documents, "
         "and office details) is drawn from verified government records in our "
         "database. Guidance prose is generated by AI using only those verified facts. "
-        "If any field shows 'not verified', please confirm directly on the official portal."
+        "If any field instructs to 'Please refer', please confirm directly on the official portal."
     )
     warning = (
         "Verify your identity documents and photocopies before visiting the office. "
@@ -612,22 +785,33 @@ def get_application(application_id: str) -> dict:
 
 @app.patch("/api/applications/{application_id}")
 def update_application(
-    application_id: str, update: ProgressUpdate
+    application_id: str, update: ApplicationSaveUpdate
 ) -> dict[str, str]:
     supabase = create_supabase()
     if not supabase:
         raise HTTPException(
             status_code=500, detail="Supabase is not configured on the server."
         )
+
+    # Build only the fields that were provided
+    patch: dict = {}
+    if update.status is not None:
+        patch["status"] = update.status
+    if update.user_id is not None:
+        patch["user_id"] = update.user_id
+
+    if not patch:
+        raise HTTPException(status_code=422, detail="No fields provided to update.")
+
     resp = (
         supabase.table("applications")
-        .update({"status": update.status})
+        .update(patch)
         .eq("id", application_id)
         .execute()
     )
     if not response_data(resp):
         raise HTTPException(status_code=404, detail="Application not found.")
-    return {"id": application_id, "status": update.status}
+    return {"id": application_id, **patch}
 
 
 @app.post("/api/chat", response_model=ChatResponse)

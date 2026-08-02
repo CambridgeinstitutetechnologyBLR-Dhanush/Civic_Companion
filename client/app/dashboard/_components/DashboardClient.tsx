@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  Search, FileText, Clock3, BadgeCheck, XCircle, 
+import {
+  Search, FileText, Clock3, BadgeCheck, XCircle,
   MapPin, Building2, Bell, History, Download, Headset, UserCog, Plus
 } from 'lucide-react';
 import { Button } from '../../services/_components/ui';
@@ -21,10 +21,10 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; // km
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
 
@@ -42,9 +42,14 @@ const APPLY_URLS: Record<string, string> = {
 };
 
 export default function DashboardClient({ user, initialApplications }: { user: any, initialApplications: any[] }) {
+  const userName =
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email?.split('@')[0] ||
+    '';
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [location, setLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [nearestOffice, setNearestOffice] = useState<any>(null);
 
   useEffect(() => {
@@ -52,10 +57,10 @@ export default function DashboardClient({ user, initialApplications }: { user: a
       navigator.geolocation.getCurrentPosition((pos) => {
         const { latitude, longitude } = pos.coords;
         setLocation({ lat: latitude, lng: longitude });
-        
+
         let nearestCandidate = OFFICES[0];
         let minDistance = Infinity;
-        
+
         OFFICES.forEach(office => {
           const dist = getDistance(latitude, longitude, office.lat, office.lng);
           if (dist < minDistance) {
@@ -85,10 +90,10 @@ export default function DashboardClient({ user, initialApplications }: { user: a
       <section className="flex flex-col gap-4 rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-6">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-2xl font-bold text-blue-700">
-            {user.email.charAt(0).toUpperCase()}
+            {(userName || user?.email || '?').charAt(0).toUpperCase()}
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Welcome back, Dhanush 👋</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Welcome back{userName ? `, ${userName}` : ''} 👋</h1>
             <p className="text-sm text-slate-500">{user.email}</p>
             <p className="mt-1 text-xs text-slate-400">Last Login: Today • 10:45 AM</p>
           </div>
@@ -130,26 +135,20 @@ export default function DashboardClient({ user, initialApplications }: { user: a
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-bold text-slate-900">Your Applications</h2>
-              <span 
-                title="This dashboard contains sample application data used for demonstration."
-                className="cursor-help inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-200 transition-colors hover:bg-blue-100"
-              >
-                🧪 Demo Mode
-              </span>
             </div>
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input 
-                  type="text" 
-                  placeholder="Search applications..." 
+                <input
+                  type="text"
+                  placeholder="Search applications..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="rounded-lg border border-slate-200 py-2 pl-9 pr-4 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
-              <select 
-                value={statusFilter} 
+              <select
+                value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="rounded-lg border border-slate-200 py-2 pl-3 pr-8 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
@@ -177,9 +176,9 @@ export default function DashboardClient({ user, initialApplications }: { user: a
                   <div className="flex items-center gap-3">
                     <span className="text-xs font-medium text-slate-500">{formatDate(app.created_at)}</span>
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
-                      ${app.status === 'approved' ? 'bg-green-100 text-green-800' : 
-                        app.status === 'rejected' ? 'bg-red-100 text-red-800' : 
-                        'bg-orange-100 text-orange-800'}
+                      ${app.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        app.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                          'bg-orange-100 text-orange-800'}
                     `}>
                       {app.status === 'approved' ? '🟢 Approved' : app.status === 'rejected' ? '🔴 Rejected' : '🟡 Pending'}
                     </span>
@@ -189,7 +188,7 @@ export default function DashboardClient({ user, initialApplications }: { user: a
                       <Button variant="secondary" className="text-xs h-8">View Details</Button>
                     </Link>
                     {APPLY_URLS[app.service] && (
-                      <button 
+                      <button
                         onClick={() => window.open(APPLY_URLS[app.service], '_blank')}
                         className="inline-flex h-8 items-center justify-center rounded-md bg-blue-600 px-3 text-xs font-medium text-white transition-colors hover:bg-blue-700"
                       >
@@ -234,7 +233,7 @@ export default function DashboardClient({ user, initialApplications }: { user: a
                   <p className="flex items-center gap-2"><Clock3 size={14} className="text-green-500" /> Open • {nearestOffice.hours}</p>
                   <p className="flex items-center gap-2"><Headset size={14} className="text-slate-400" /> {nearestOffice.phone}</p>
                 </div>
-                <button 
+                <button
                   onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${nearestOffice.lat},${nearestOffice.lng}`, '_blank')}
                   className="mt-2 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-slate-800 hover:scale-[1.02]"
                 >

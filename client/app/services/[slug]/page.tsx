@@ -1,8 +1,8 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { ArrowRight, CheckCircle2, LoaderCircle, MessageSquareText, Sparkles } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowRight, CheckCircle2, LoaderCircle, MessageSquareText, Sparkles, XCircle } from 'lucide-react';
 import { createClient } from '../../../lib/supabase/client';
 import { findService } from '../../../lib/services';
 import {
@@ -25,24 +25,31 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000';
 const questions = [
   'Which state do you live in?',
   'Which district do you live in?',
+  'Which taluk do you live in? (Optional)',
+  'What is your native place/village? (Optional)',
   'What is the purpose of your application?',
   'Which category best describes you?',
 ];
 
 export default function ServicePlannerPage() {
   const { slug } = useParams<{ slug: string }>();
+  const router = useRouter();
   const [service, setService] = useState<Awaited<ReturnType<typeof findService>>>(undefined);
   const [step, setStep] = useState(0);
   const [state, setState] = useState('Karnataka');
   const [district, setDistrict] = useState('');
+  const [taluk, setTaluk] = useState('');
+  const [nativePlace, setNativePlace] = useState('');
   const [purpose, setPurpose] = useState('Education / scholarship');
   const [category, setCategory] = useState('Student');
 
   // Plan generation state
   const [generating, setGenerating] = useState(false);
   const [plan, setPlan] = useState<GuidancePlan | null>(null);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -91,6 +98,21 @@ export default function ServicePlannerPage() {
       }
     }
 
+    // Try to get GPS coordinates
+    let lat: number | undefined;
+    let lng: number | undefined;
+    try {
+      if (navigator.geolocation) {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+        });
+        lat = position.coords.latitude;
+        lng = position.coords.longitude;
+      }
+    } catch (err) {
+      console.warn("GPS unavailable or denied:", err);
+    }
+
     try {
       const response = await fetch(`${API_BASE}/api/plans/generate`, {
         method: 'POST',
@@ -101,6 +123,11 @@ export default function ServicePlannerPage() {
           purpose,
           has_aadhaar: true,
           category,
+          district: district || undefined,
+          taluk: taluk || undefined,
+          native_place: nativePlace || undefined,
+          latitude: lat,
+          longitude: lng
         }),
       });
 
@@ -133,14 +160,70 @@ export default function ServicePlannerPage() {
 
   // ── Save generated plan and go to dashboard ─────────────────────────────────
   const savePlan = async () => {
-    setSaved(true);
-    window.location.assign('/dashboard');
+    if (!plan || saving) return;
+    setSaving(true);
+    setToast(null);
+
+    try {
+      // 1. Get the currently authenticated user
+      const supabase = createClient();
+      let userId: string | null = null;
+      if (supabase) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          window.location.assign('/login?error=unauthorized');
+          return;
+        }
+        userId = user.id;
+      }
+
+      // 2. PATCH the application row — write user_id and status='saved'
+      const patchRes = await fetch(
+        `${API_BASE}/api/applications/${plan.application_id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'saved', user_id: userId }),
+        },
+      );
+
+      if (!patchRes.ok) {
+        const detail = await patchRes.json().catch(() => ({}));
+        throw new Error(
+          (detail as { detail?: string }).detail ?? `Save failed (HTTP ${patchRes.status})`,
+        );
+      }
+
+      // 3. Mark as saved, show success toast, then navigate
+      setSaved(true);
+      setToast({ type: 'success', message: 'Plan saved! Taking you to your dashboard…' });
+      // Small delay so the toast is visible for a moment
+      await new Promise((r) => setTimeout(r, 800));
+      router.push('/dashboard');
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : 'Could not save your plan. Please try again.';
+      setToast({ type: 'error', message: msg });
+      setSaving(false);
+    }
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f8fbff_0%,#ffffff_30%,#f7f9fc_100%)] text-slate-900">
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-center gap-3 rounded-2xl px-5 py-3.5 text-sm font-medium shadow-xl transition-all ${toast.type === 'success'
+            ? 'bg-emerald-600 text-white'
+            : 'bg-rose-600 text-white'
+            }`}
+        >
+          {toast.type === 'success' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+          {toast.message}
+        </div>
+      )}
       <Navbar
         backHref="/services"
         backLabel="All services"
@@ -208,6 +291,18 @@ export default function ServicePlannerPage() {
                             required
                           />
                         ) : step === 2 ? (
+                          <InputField
+                            value={taluk}
+                            onChange={(e) => setTaluk(e.target.value)}
+                            placeholder="e.g. Bengaluru South"
+                          />
+                        ) : step === 3 ? (
+                          <InputField
+                            value={nativePlace}
+                            onChange={(e) => setNativePlace(e.target.value)}
+                            placeholder="e.g. Jayanagar"
+                          />
+                        ) : step === 4 ? (
                           <SelectField value={purpose} onChange={(e) => setPurpose(e.target.value)}>
                             <option>Education / scholarship</option>
                             <option>Job application</option>
@@ -229,13 +324,16 @@ export default function ServicePlannerPage() {
                       </div>
                     </Field>
 
-                    {step === 3 ? (
+                    {step === 5 ? (
                       <Card className="border-blue-100 bg-blue-50/60 p-5 shadow-sm">
                         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">
                           Plan summary
                         </p>
-                        <p className="mt-3 text-sm leading-7 text-slate-700">
-                          {state} · {district || 'Your district'} · {purpose} · {category}
+                        <p className="truncate font-medium">
+                          {state} · {district || 'Your district'} · {taluk || 'Your taluk'} · {purpose}
+                        </p>
+                        <p className="mt-3 text-sm text-blue-800">
+                          Allow Civic Companion to access your location to find the nearest government office.
                         </p>
                       </Card>
                     ) : null}
@@ -257,9 +355,9 @@ export default function ServicePlannerPage() {
                         ) : null}
                         {generating
                           ? 'Generating your plan…'
-                          : step === 3
-                          ? 'Generate my plan'
-                          : 'Continue'}
+                          : step === 5
+                            ? 'Generate my plan'
+                            : 'Continue'}
                         {!generating ? <ArrowRight size={17} /> : null}
                       </Button>
                       <ButtonLink href="/services" variant="secondary">
@@ -291,10 +389,12 @@ export default function ServicePlannerPage() {
 
                     <Card className="p-5">
                       <p className="text-sm font-semibold text-slate-900">Current inputs</p>
-                      <div className="mt-4 space-y-3 text-sm text-slate-600">
+                      <dl className="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                         {[
                           ['State', state],
                           ['District', district || 'Not entered yet'],
+                          ['Taluk', taluk || 'Not entered yet'],
+                          ['Native Place', nativePlace || 'Not entered yet'],
                           ['Purpose', purpose],
                           ['Category', category],
                         ].map(([label, value]) => (
@@ -303,7 +403,7 @@ export default function ServicePlannerPage() {
                             <span className="text-right text-slate-900">{value}</span>
                           </div>
                         ))}
-                      </div>
+                      </dl>
                     </Card>
                   </div>
                 </aside>
@@ -318,15 +418,17 @@ export default function ServicePlannerPage() {
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button
                   onClick={savePlan}
-                  disabled={saved}
+                  disabled={saving || saved}
                   className="sm:min-w-[240px]"
                 >
-                  {saved ? (
+                  {saving ? (
                     <LoaderCircle className="animate-spin" size={17} />
+                  ) : saved ? (
+                    <CheckCircle2 size={17} />
                   ) : (
                     <CheckCircle2 size={17} />
                   )}
-                  {saved ? 'Redirecting…' : 'Save plan & go to dashboard'}
+                  {saving ? 'Saving…' : saved ? 'Redirecting…' : 'Save plan & go to dashboard'}
                 </Button>
                 <ButtonLink href="/services" variant="secondary">
                   Plan another service
