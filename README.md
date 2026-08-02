@@ -1,47 +1,244 @@
-# Civic Companion AI
+# 🏛️ Civic Companion
 
-## Project structure
+> **AI-Powered Government Service Guidance Platform**
 
-- `client/` — Next.js frontend application.
-- `server/` — FastAPI backend application.
-- `spec.md` — product specification.
+Civic Companion is an AI-powered web application that simplifies the process of applying for government services in India. It provides citizens with personalized guidance, service-specific eligibility criteria, required documents, application steps, estimated processing time, fees, and relevant government office information—all in one place.
 
-## Run the client
+Built for the **Hackathon**, Civic Companion aims to make government services more accessible, understandable, and user-friendly.
 
-```powershell
+---
+
+## 🌐 Live Demo
+
+🔗 **https://civic-companion-nu.vercel.app/**
+
+---
+
+# 📌 Problem Statement
+
+Applying for government services is often confusing because information is scattered across multiple websites and official portals. Citizens frequently struggle to understand:
+
+- Eligibility criteria
+- Required documents
+- Application procedures
+- Processing time
+- Government fees
+- Which government office to visit
+
+This particularly affects students, job seekers, senior citizens, rural residents, and first-time applicants, resulting in incomplete applications, repeated office visits, and unnecessary delays.
+
+---
+
+# 💡 Solution
+
+Civic Companion provides a single AI-powered platform where users can generate a personalized application guide for various government services.
+
+The platform analyzes the selected service and user-provided details to generate:
+
+- ✅ Eligibility Criteria
+- ✅ Required Documents
+- ✅ Step-by-Step Application Process
+- ✅ Estimated Processing Time
+- ✅ Government Fees
+- ✅ Relevant Government Office Information
+- ✅ Personalized Guidance
+
+The objective is to simplify government services and reduce confusion for citizens.
+
+---
+
+# ✨ Features
+
+- 🤖 AI-powered personalized guidance
+- 📋 Service-specific eligibility criteria
+- 📄 Dynamic document checklist
+- 📝 Step-by-step application guidance
+- 🏢 Government office recommendations
+- 📊 User dashboard for managing applications
+- 🔒 Secure authentication
+- 📱 Responsive user interface
+- 🌐 Modern web application
+
+---
+
+# 🤖 AI Integration
+
+Artificial Intelligence is used to:
+
+- Generate personalized application guidance
+- Simplify complex government procedures
+- Present easy-to-understand application steps
+- Organize eligibility and document requirements
+- Improve the user experience through intelligent assistance
+
+---
+
+# 🛠️ Tech Stack
+
+## Frontend
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+
+## Backend
+
+- FastAPI
+- Python
+
+## Database
+
+- Supabase
+
+## AI
+
+- OpenAI API
+
+## Deployment
+
+- Vercel
+
+---
+
+# 📂 Project Structure
+
+```
+Civic_Companion
+│
+├── client/
+│   ├── app/
+│   ├── components/
+│   ├── lib/
+│   └── ...
+│
+├── server/
+│   ├── app/
+│   ├── scripts/
+│   └── ...
+│
+└── README.md
+```
+
+---
+
+# 🚀 Getting Started
+
+## Clone Repository
+
+```bash
+git clone https://github.com/CambridgeinstitutetechnologyBLR-Dhanush/Civic_Companion.git
+```
+
+## Frontend
+
+```bash
 cd client
-npm.cmd install
-npm.cmd run dev
+
+npm install
+
+npm run dev
 ```
 
-The UI will be available at `http://localhost:3000`.
+## Backend
 
-## Run the server
+```bash
+cd server
+
+python -m venv .venv
+```
+
+### Windows
 
 ```powershell
-cd server
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+.venv\Scripts\Activate.ps1
 ```
 
-The API health check is at `http://localhost:8000/health`.
+### Install Dependencies
 
-## MVP API capabilities
+```bash
+pip install -r requirements.txt
+```
 
-- `GET /api/services` — all ten supported MVP services.
-- `POST /api/plans/generate` — creates a personalized action plan and a saved application record.
-- `GET` / `PATCH /api/applications/{id}` — reads or updates application progress.
-- `POST /api/chat` — contextual follow-up guidance.
-- `POST /api/emergency` — guidance for lost documents, rejections, incorrect applications, and renewals.
+### Run Server
 
-Open `http://localhost:8000/docs` for the interactive API documentation.
+```bash
+python -m uvicorn app.main:app --reload
+```
 
-## Production integrations still required
+---
 
-This repository is a functioning local MVP. Before public use, replace the demo
-guidance with verified official service data, configure authentication and a
-database service, add a maps provider, and configure an LLM provider with a
-server-side API key. Do not use the MVP's office, fee, or timing guidance as an
-official source.
+# 📖 How It Works
+
+1. User signs in.
+2. Selects a government service.
+3. Enters basic details.
+4. AI generates a personalized application guide.
+5. User reviews:
+   - Eligibility
+   - Required documents
+   - Application steps
+   - Processing time
+   - Fees
+   - Government office information
+6. User saves the application.
+7. Dashboard stores application history.
+
+---
+
+# 📌 Supported Government Services
+
+Examples include:
+
+- Income Certificate
+- Caste Certificate
+- Residence Certificate
+- Domicile Certificate
+- Birth Certificate
+- Death Certificate
+- Marriage Certificate
+- Driving Licence
+- Passport
+- Voter ID
+- Ration Card
+
+The platform is designed to support many more government services.
+
+---
+
+# 🔮 Future Scope
+
+The architecture has been designed for future enhancements, including:
+
+- Additional government services across India
+- More comprehensive state and district coverage
+- Enhanced nearby government office recommendations
+- Multilingual support
+- OCR-based document verification
+- Voice assistance
+- Real-time application status tracking
+- Integration with official government APIs and verified datasets
+
+---
+
+# 🎯 Why Civic Companion?
+
+Government services should be simple, transparent, and accessible to everyone.
+
+Civic Companion helps citizens prepare applications with confidence by providing personalized AI-powered guidance, reducing confusion, saving time, and making government information easier to understand.
+
+---
+
+# 👨‍💻 Team
+
+**Team Nexus**
+
+Cambridge Institute of Technology, Bengaluru
+
+---
+
+# 📜 License
+
+This project was developed for a Hackathon.
+
+It is intended for educational and demonstration purposes.
